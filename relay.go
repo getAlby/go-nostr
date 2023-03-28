@@ -19,6 +19,11 @@ const (
 	PublishStatusSent      Status = 0
 	PublishStatusFailed    Status = -1
 	PublishStatusSucceeded Status = 1
+
+	// Maximum time that the subscription will wait for a pong message before erroring
+	pongWait = 60 * time.Second
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
 )
 
 var subscriptionIdCounter = 0
@@ -45,7 +50,7 @@ type Relay struct {
 
 	Challenges        chan string // NIP-42 Challenges
 	Notices           chan string
-	ConnectionError   error
+	ConnectionError   chan error
 	ConnectionContext context.Context // will be canceled when the connection closes
 
 	okCallbacks s.MapOf[string, func(bool, string)]
@@ -100,18 +105,22 @@ func (r *Relay) Connect(ctx context.Context) error {
 	conn := NewConnection(socket)
 	r.Connection = conn
 
-	// ping every 29 seconds
-	ticker := time.NewTicker(29 * time.Second)
+	conn.socket.SetReadDeadline(time.Now().Add(pongWait))
+	conn.socket.SetPongHandler(func(string) error {
+		log.Printf("debug: Received pong")
+		conn.socket.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+	ticker := time.NewTicker(pingPeriod)
 	defer ticker.Stop()
 	go func() {
 		for {
-			select {
-			case <-ticker.C:
-				err := conn.socket.WriteMessage(websocket.PingMessage, nil)
-				if err != nil {
-					log.Printf("error writing ping: %v; closing websocket", err)
-					return
-				}
+			<-ticker.C
+			err := conn.socket.WriteMessage(websocket.PingMessage, nil)
+			if err != nil {
+				log.Printf("error writing ping: %v; closing websocket", err)
+				r.ConnectionError <- err
+				return
 			}
 		}
 	}()
@@ -121,7 +130,7 @@ func (r *Relay) Connect(ctx context.Context) error {
 		for {
 			typ, message, err := conn.socket.ReadMessage()
 			if err != nil {
-				r.ConnectionError = err
+				r.ConnectionError <- err
 				break
 			}
 
