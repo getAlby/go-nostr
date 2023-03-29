@@ -51,6 +51,7 @@ type Relay struct {
 	Challenges        chan string // NIP-42 Challenges
 	Notices           chan string
 	ConnectionError   chan error
+	LastPongReceived  time.Time
 	ConnectionContext context.Context // will be canceled when the connection closes
 
 	okCallbacks s.MapOf[string, func(bool, string)]
@@ -101,26 +102,34 @@ func (r *Relay) Connect(ctx context.Context) error {
 
 	r.Challenges = make(chan string)
 	r.Notices = make(chan string)
+	r.ConnectionError = make(chan error)
+	r.LastPongReceived = time.Now()
 
 	conn := NewConnection(socket)
 	r.Connection = conn
 
-	conn.socket.SetReadDeadline(time.Now().Add(pongWait))
 	conn.socket.SetPongHandler(func(string) error {
-		log.Printf("debug: Received pong")
-		conn.socket.SetReadDeadline(time.Now().Add(pongWait))
+		r.LastPongReceived = time.Now()
 		return nil
 	})
+
 	ticker := time.NewTicker(pingPeriod)
-	defer ticker.Stop()
 	go func() {
 		for {
 			<-ticker.C
+			// everything is OK IFF now - lastpongReceived < pongwait
+			// => everything is OK IFF now < pongwait + lastPongReceived
+			// => NOT everything is OK IFF now > pongwait + lastPongReceived
+			// => NOT everything is OK IFF pongwait + lastPongReceived BEFORE now
+			if r.LastPongReceived.Add(pongWait).Before(time.Now()) {
+				r.ConnectionError <- fmt.Errorf("Did not receive a pong message")
+				break
+			}
 			err := conn.socket.WriteMessage(websocket.PingMessage, nil)
 			if err != nil {
 				log.Printf("error writing ping: %v; closing websocket", err)
 				r.ConnectionError <- err
-				return
+				break
 			}
 		}
 	}()
@@ -130,6 +139,7 @@ func (r *Relay) Connect(ctx context.Context) error {
 		for {
 			typ, message, err := conn.socket.ReadMessage()
 			if err != nil {
+				fmt.Println("here")
 				r.ConnectionError <- err
 				break
 			}
@@ -245,6 +255,7 @@ func (r *Relay) Connect(ctx context.Context) error {
 			}
 		}
 
+		ticker.Stop()
 		cancel()
 	}()
 
