@@ -562,7 +562,13 @@ func (pool *SimplePool) subMany(
 							debugLogf("CLOSED from %s: '%s'\n", nm, reason)
 						}
 
-						return
+						// Reconnect on any CLOSED instead of returning. A bare return here
+						// permanently abandons this relay leg, and on multi-relay subscriptions
+						// the shared events channel only closes once every per-relay goroutine
+						// has exited (see pending.Dec at the deferred cleanup). One relay sending
+						// CLOSED therefore leaves the consumer's channel-close watchdog silent
+						// and the subscription stays half-dead until the process restarts.
+						goto reconnect
 					case <-ctx.Done():
 						return
 					}
