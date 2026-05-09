@@ -7,7 +7,7 @@ import (
 
 	"github.com/fiatjaf/eventstore/slicestore"
 	"github.com/fiatjaf/khatru"
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 	"github.com/stretchr/testify/require"
 )
 

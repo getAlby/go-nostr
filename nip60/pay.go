@@ -7,8 +7,8 @@ import (
 
 	"github.com/elnosh/gonuts/cashu"
 	"github.com/elnosh/gonuts/cashu/nuts/nut05"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip60/client"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip60/client"
 )
 
 func (w *Wallet) PayBolt11(ctx context.Context, invoice string, opts ...SendOption) (string, error) {

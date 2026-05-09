@@ -3,7 +3,7 @@ package memory
 import (
 	"sync"
 
-	"github.com/nbd-wtf/go-nostr/sdk/kvstore"
+	"github.com/getAlby/go-nostr/sdk/kvstore"
 )
 
 var _ kvstore.KVStore = (*Store)(nil)

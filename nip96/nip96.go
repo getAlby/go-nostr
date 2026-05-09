@@ -14,7 +14,7 @@ import (
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 // Upload uploads a file to the provided req.Host.

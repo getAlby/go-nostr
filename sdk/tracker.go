@@ -3,9 +3,9 @@ package sdk
 import (
 	"net/url"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip27"
-	"github.com/nbd-wtf/go-nostr/sdk/hints"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip27"
+	"github.com/getAlby/go-nostr/sdk/hints"
 )
 
 func (sys *System) TrackQueryAttempts(relay string, author string, kind int) {

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 type HistoryEntry struct {

@@ -5,7 +5,7 @@ import (
 	"math"
 	"net"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 func DecodeRequest(req Request) (MethodParams, error) {

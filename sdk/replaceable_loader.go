@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/dataloader"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/dataloader"
 )
 
 type replaceableIndex int

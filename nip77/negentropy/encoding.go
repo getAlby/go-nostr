@@ -3,7 +3,7 @@ package negentropy
 import (
 	"fmt"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 func (n *Negentropy) readTimestamp(reader *StringHexReader) (nostr.Timestamp, error) {

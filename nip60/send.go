@@ -11,8 +11,8 @@ import (
 	"github.com/elnosh/gonuts/cashu/nuts/nut02"
 	"github.com/elnosh/gonuts/cashu/nuts/nut10"
 	"github.com/elnosh/gonuts/cashu/nuts/nut11"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip60/client"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip60/client"
 )
 
 type SendOption func(opts *sendSettings)

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/cache"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/cache"
 )
 
 type GenericList[I TagItemWithValue] struct {

@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/nbd-wtf/go-nostr/nip45/hyperloglog"
+	"github.com/getAlby/go-nostr/nip45/hyperloglog"
 	"github.com/puzpuzpuz/xsync/v3"
 )
 

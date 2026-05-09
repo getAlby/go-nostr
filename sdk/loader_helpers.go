@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 var kvStoreLastFetchPrefix = byte('f')

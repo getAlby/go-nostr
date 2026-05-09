@@ -6,14 +6,14 @@ import (
 
 	"github.com/fiatjaf/eventstore"
 	"github.com/fiatjaf/eventstore/nullstore"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/cache"
-	cache_memory "github.com/nbd-wtf/go-nostr/sdk/cache/memory"
-	"github.com/nbd-wtf/go-nostr/sdk/dataloader"
-	"github.com/nbd-wtf/go-nostr/sdk/hints"
-	"github.com/nbd-wtf/go-nostr/sdk/hints/memoryh"
-	"github.com/nbd-wtf/go-nostr/sdk/kvstore"
-	kvstore_memory "github.com/nbd-wtf/go-nostr/sdk/kvstore/memory"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/cache"
+	cache_memory "github.com/getAlby/go-nostr/sdk/cache/memory"
+	"github.com/getAlby/go-nostr/sdk/dataloader"
+	"github.com/getAlby/go-nostr/sdk/hints"
+	"github.com/getAlby/go-nostr/sdk/hints/memoryh"
+	"github.com/getAlby/go-nostr/sdk/kvstore"
+	kvstore_memory "github.com/getAlby/go-nostr/sdk/kvstore/memory"
 )
 
 // System represents the core functionality of the SDK, providing access to

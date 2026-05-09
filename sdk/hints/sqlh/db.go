@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/hints"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/hints"
 )
 
 type SQLHints struct {

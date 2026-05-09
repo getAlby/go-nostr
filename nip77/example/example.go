@@ -7,8 +7,8 @@ import (
 
 	"github.com/fiatjaf/eventstore"
 	"github.com/fiatjaf/eventstore/slicestore"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip77"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip77"
 )
 
 func main() {

@@ -7,9 +7,9 @@ import (
 	"sync"
 
 	"github.com/mailru/easyjson"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip04"
-	"github.com/nbd-wtf/go-nostr/nip44"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip04"
+	"github.com/getAlby/go-nostr/nip44"
 )
 
 var _ Signer = (*StaticKeySigner)(nil)

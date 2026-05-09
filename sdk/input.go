@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/hex"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip05"
-	"github.com/nbd-wtf/go-nostr/nip19"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip05"
+	"github.com/getAlby/go-nostr/nip19"
 )
 
 // InputToProfile turns any npub/nprofile/hex/nip05 input into a ProfilePointer (or nil).

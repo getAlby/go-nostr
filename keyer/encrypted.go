@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip44"
-	"github.com/nbd-wtf/go-nostr/nip49"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip44"
+	"github.com/getAlby/go-nostr/nip49"
 )
 
 var _ nostr.Keyer = (*EncryptedKeySigner)(nil)

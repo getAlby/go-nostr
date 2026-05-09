@@ -3,7 +3,7 @@ package nip70
 import (
 	"strings"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 func IsProtected(event nostr.Event) bool {

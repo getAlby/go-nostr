@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip77/negentropy"
-	"github.com/nbd-wtf/go-nostr/nip77/negentropy/storage/empty"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip77/negentropy"
+	"github.com/getAlby/go-nostr/nip77/negentropy/storage/empty"
 )
 
 func FetchIDsOnly(

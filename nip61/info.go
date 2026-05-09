@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	"github.com/elnosh/gonuts/cashu"
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 type Info struct {

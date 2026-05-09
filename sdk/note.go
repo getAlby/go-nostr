@@ -1,8 +1,8 @@
 package sdk
 
 import (
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip27"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip27"
 )
 
 // PrepareNoteEvent takes an event with content that may include any number of URLs, partial URLs without the scheme, npub references with or without the "nostr:" prefix, tags and whatnot, then edits the content so it contains properly formatted URLs and references and adds the required tags based on these.

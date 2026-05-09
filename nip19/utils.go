@@ -1,7 +1,7 @@
 package nip19
 
 import (
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 func NeventFromRelayEvent(ie nostr.RelayEvent) string {

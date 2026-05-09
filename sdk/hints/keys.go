@@ -1,6 +1,6 @@
 package hints
 
-import "github.com/nbd-wtf/go-nostr"
+import "github.com/getAlby/go-nostr"
 
 const END_OF_WORLD nostr.Timestamp = 2208999600 // 2040-01-01
 

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip59"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip59"
 )
 
 func GetDMRelays(ctx context.Context, pubkey string, pool *nostr.SimplePool, relaysToQuery []string) []string {

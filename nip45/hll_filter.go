@@ -3,7 +3,7 @@ package nip45
 import (
 	"strconv"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 // HyperLogLogEventPubkeyOffsetForFilter returns the deterministic pubkey offset that will be used

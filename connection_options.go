@@ -13,7 +13,7 @@ import (
 var defaultConnectionOptions = &ws.DialOptions{
 	CompressionMode: ws.CompressionContextTakeover,
 	HTTPHeader: http.Header{
-		textproto.CanonicalMIMEHeaderKey("User-Agent"): {"github.com/nbd-wtf/go-nostr"},
+		textproto.CanonicalMIMEHeaderKey("User-Agent"): {"github.com/getAlby/go-nostr"},
 	},
 }
 

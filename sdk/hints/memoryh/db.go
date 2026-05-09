@@ -6,8 +6,8 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/hints"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/hints"
 )
 
 var _ hints.HintsDB = (*HintDB)(nil)

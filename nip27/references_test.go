@@ -4,7 +4,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 	"github.com/stretchr/testify/require"
 )
 

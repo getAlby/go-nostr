@@ -3,7 +3,7 @@ package nip34
 import (
 	"strings"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 type RepositoryState struct {

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/dataloader"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/dataloader"
 )
 
 // this is similar to replaceable_loader and reuses logic from that.

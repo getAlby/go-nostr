@@ -7,8 +7,8 @@ import (
 	"slices"
 
 	"github.com/dgraph-io/badger/v4"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/hints"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/hints"
 )
 
 var _ hints.HintsDB = (*BadgerHints)(nil)

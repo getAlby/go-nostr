@@ -1,6 +1,6 @@
 package nip73
 
-import "github.com/nbd-wtf/go-nostr"
+import "github.com/getAlby/go-nostr"
 
 var _ nostr.Pointer = (*ExternalPointer)(nil)
 

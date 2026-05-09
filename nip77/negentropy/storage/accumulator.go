@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 
-	"github.com/nbd-wtf/go-nostr/nip77/negentropy"
+	"github.com/getAlby/go-nostr/nip77/negentropy"
 )
 
 type Accumulator struct {

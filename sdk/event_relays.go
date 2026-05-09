@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/nbd-wtf/go-nostr/sdk/kvstore"
+	"github.com/getAlby/go-nostr/sdk/kvstore"
 )
 
 const eventRelayPrefix = byte('r')

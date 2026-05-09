@@ -3,7 +3,7 @@ package sdk
 import (
 	"context"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 func (sys *System) SearchUsers(ctx context.Context, query string) []ProfileMetadata {

@@ -4,8 +4,8 @@ import (
 	"iter"
 	"regexp"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip19"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip19"
 )
 
 type Reference struct {

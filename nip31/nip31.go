@@ -1,6 +1,6 @@
 package nip31
 
-import "github.com/nbd-wtf/go-nostr"
+import "github.com/getAlby/go-nostr"
 
 func GetAlt(event nostr.Event) string {
 	for _, tag := range event.Tags {

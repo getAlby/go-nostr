@@ -6,9 +6,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip19"
-	"github.com/nbd-wtf/go-nostr/nip73"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip19"
+	"github.com/getAlby/go-nostr/nip73"
 )
 
 type Block struct {

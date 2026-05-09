@@ -3,8 +3,8 @@ package empty
 import (
 	"iter"
 
-	"github.com/nbd-wtf/go-nostr/nip77/negentropy"
-	"github.com/nbd-wtf/go-nostr/nip77/negentropy/storage"
+	"github.com/getAlby/go-nostr/nip77/negentropy"
+	"github.com/getAlby/go-nostr/nip77/negentropy/storage"
 )
 
 var acc storage.Accumulator

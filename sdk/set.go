@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/sdk/cache"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/sdk/cache"
 )
 
 // this is similar to list.go and inherits code from that.

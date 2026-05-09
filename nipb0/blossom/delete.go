@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 // Delete deletes a file from the media server by its hash

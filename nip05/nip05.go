@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 var NIP05_REGEX = regexp.MustCompile(`^(?:([\w.+-]+)@)?([\w_-]+(\.[\w_-]+)+)$`)

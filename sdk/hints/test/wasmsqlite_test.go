@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nbd-wtf/go-nostr/sdk/hints/sqlh"
+	"github.com/getAlby/go-nostr/sdk/hints/sqlh"
 	_ "github.com/ncruces/go-sqlite3/driver"
 	_ "github.com/ncruces/go-sqlite3/embed"
 	"github.com/stretchr/testify/require"

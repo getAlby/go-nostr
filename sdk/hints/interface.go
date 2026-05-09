@@ -1,6 +1,6 @@
 package hints
 
-import "github.com/nbd-wtf/go-nostr"
+import "github.com/getAlby/go-nostr"
 
 type RelayScores struct {
 	Relay  string

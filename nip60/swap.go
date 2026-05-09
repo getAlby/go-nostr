@@ -11,7 +11,7 @@ import (
 	"github.com/elnosh/gonuts/cashu/nuts/nut03"
 	"github.com/elnosh/gonuts/cashu/nuts/nut10"
 	"github.com/elnosh/gonuts/cashu/nuts/nut13"
-	"github.com/nbd-wtf/go-nostr/nip60/client"
+	"github.com/getAlby/go-nostr/nip60/client"
 )
 
 type swapSettings struct {

@@ -8,7 +8,7 @@ import (
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/elnosh/gonuts/cashu"
 	"github.com/elnosh/gonuts/crypto"
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 func VerifyNutzap(

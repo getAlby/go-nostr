@@ -3,7 +3,7 @@ package blossom
 import (
 	"encoding/json"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 // BlobDescriptor represents metadata about a blob stored on a media server

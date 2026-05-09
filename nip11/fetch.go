@@ -7,7 +7,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 // Fetch fetches the NIP-11 metadata for a relay.
@@ -38,7 +38,7 @@ func Fetch(ctx context.Context, u string) (info RelayInformationDocument, err er
 
 	// add the NIP-11 headers
 	req.Header.Add("Accept", "application/nostr+json")
-	req.Header.Add("User-Agent", "https://github.com/nbd-wtf/go-nostr")
+	req.Header.Add("User-Agent", "https://github.com/getAlby/go-nostr")
 
 	// send the request
 	resp, err := http.DefaultClient.Do(req)

@@ -6,7 +6,7 @@ import (
 
 	"github.com/elnosh/gonuts/cashu"
 	"github.com/elnosh/gonuts/cashu/nuts/nut04"
-	"github.com/nbd-wtf/go-nostr/nip60/client"
+	"github.com/getAlby/go-nostr/nip60/client"
 )
 
 func (w *Wallet) SendExternal(

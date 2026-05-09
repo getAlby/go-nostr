@@ -4,7 +4,7 @@ import (
 	"iter"
 	"strconv"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 func HyperLogLogEventPubkeyOffsetsAndReferencesForEvent(evt *nostr.Event) iter.Seq2[string, int] {

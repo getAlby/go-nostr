@@ -8,7 +8,7 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 	"github.com/valyala/fasthttp"
 )
 

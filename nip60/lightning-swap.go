@@ -9,7 +9,7 @@ import (
 	"github.com/elnosh/gonuts/cashu/nuts/nut02"
 	"github.com/elnosh/gonuts/cashu/nuts/nut04"
 	"github.com/elnosh/gonuts/cashu/nuts/nut05"
-	"github.com/nbd-wtf/go-nostr/nip60/client"
+	"github.com/getAlby/go-nostr/nip60/client"
 )
 
 type lightningSwapStatus int

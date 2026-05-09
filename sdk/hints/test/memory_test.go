@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"github.com/nbd-wtf/go-nostr/sdk/hints/memoryh"
+	"github.com/getAlby/go-nostr/sdk/hints/memoryh"
 )
 
 func TestMemoryHints(t *testing.T) {

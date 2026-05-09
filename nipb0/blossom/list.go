@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/nbd-wtf/go-nostr"
+	"github.com/getAlby/go-nostr"
 )
 
 // List retrieves a list of blobs from a specific pubkey

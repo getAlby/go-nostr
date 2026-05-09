@@ -12,8 +12,8 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/elnosh/gonuts/cashu/nuts/nut13"
-	"github.com/nbd-wtf/go-nostr"
-	"github.com/nbd-wtf/go-nostr/nip60/client"
+	"github.com/getAlby/go-nostr"
+	"github.com/getAlby/go-nostr/nip60/client"
 )
 
 type Wallet struct {

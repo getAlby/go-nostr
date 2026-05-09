@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nbd-wtf/go-nostr"
-	cache_memory "github.com/nbd-wtf/go-nostr/sdk/cache/memory"
+	"github.com/getAlby/go-nostr"
+	cache_memory "github.com/getAlby/go-nostr/sdk/cache/memory"
 )
 
 type EventRef struct{ nostr.Pointer }
