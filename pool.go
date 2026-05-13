@@ -433,14 +433,24 @@ func (pool *SimplePool) subMany(
 		}()
 	}
 
-	pending := xsync.NewCounter()
-	pending.Add(int64(len(urls)))
+	var pending atomic.Int64
+	pending.Store(int64(len(urls)))
+	finish := func() {
+		// Add(-1) returns the new value atomically; only the goroutine that
+		// brings pending to zero closes events, avoiding a double-close race
+		// when multiple legs exit concurrently.
+		if pending.Add(-1) == 0 {
+			close(events)
+			cancel(fmt.Errorf("aborted: %w", context.Cause(ctx)))
+		}
+	}
 	for i, url := range urls {
 		url = NormalizeURL(url)
 		urls[i] = url
 		if idx := slices.Index(urls, url); idx != i {
 			// skip duplicate relays in the list
 			eoseWg.Done()
+			finish()
 			continue
 		}
 
@@ -448,11 +458,7 @@ func (pool *SimplePool) subMany(
 
 		go func(nm string) {
 			defer func() {
-				pending.Dec()
-				if pending.Value() == 0 {
-					close(events)
-					cancel(fmt.Errorf("aborted: %w", context.Cause(ctx)))
-				}
+				finish()
 				if eosed.CompareAndSwap(false, true) {
 					eoseWg.Done()
 				}
