@@ -433,14 +433,24 @@ func (pool *SimplePool) subMany(
 		}()
 	}
 
-	pending := xsync.NewCounter()
-	pending.Add(int64(len(urls)))
+	var pending atomic.Int64
+	pending.Store(int64(len(urls)))
+	finish := func() {
+		// Add(-1) returns the new value atomically; only the goroutine that
+		// brings pending to zero closes events, avoiding a double-close race
+		// when multiple legs exit concurrently.
+		if pending.Add(-1) == 0 {
+			close(events)
+			cancel(fmt.Errorf("aborted: %w", context.Cause(ctx)))
+		}
+	}
 	for i, url := range urls {
 		url = NormalizeURL(url)
 		urls[i] = url
 		if idx := slices.Index(urls, url); idx != i {
 			// skip duplicate relays in the list
 			eoseWg.Done()
+			finish()
 			continue
 		}
 
@@ -448,11 +458,7 @@ func (pool *SimplePool) subMany(
 
 		go func(nm string) {
 			defer func() {
-				pending.Dec()
-				if pending.Value() == 0 {
-					close(events)
-					cancel(fmt.Errorf("aborted: %w", context.Cause(ctx)))
-				}
+				finish()
 				if eosed.CompareAndSwap(false, true) {
 					eoseWg.Done()
 				}
@@ -565,9 +571,11 @@ func (pool *SimplePool) subMany(
 						// Reconnect on any CLOSED instead of returning. A bare return here
 						// permanently abandons this relay leg, and on multi-relay subscriptions
 						// the shared events channel only closes once every per-relay goroutine
-						// has exited (see pending.Dec at the deferred cleanup). One relay sending
-						// CLOSED therefore leaves the consumer's channel-close watchdog silent
-						// and the subscription stays half-dead until the process restarts.
+						// has exited: each leg's deferred cleanup calls finish(), which does
+						// pending.Add(-1) and only closes events when the count reaches zero.
+						// One relay sending CLOSED therefore leaves the consumer's channel-close
+						// watchdog silent and the subscription stays half-dead until the process
+						// restarts.
 						goto reconnect
 					case <-ctx.Done():
 						return
