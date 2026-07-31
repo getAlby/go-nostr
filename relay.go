@@ -171,13 +171,15 @@ func (r *Relay) ConnectWithTLS(ctx context.Context, tlsConfig *tls.Config) error
 			ticker.Stop()
 
 			// guarded by the same mutex as close(), which reads Connection to shut the
-			// websocket down: both run when the connection context is canceled
+			// websocket down, and as the reader loop, which sets ConnectionError on its
+			// way out: all of them run when the connection context is canceled
 			r.closeMutex.Lock()
 			r.Connection = nil
+			connectionError := r.ConnectionError
 			r.closeMutex.Unlock()
 
 			for _, sub := range r.Subscriptions.Range {
-				sub.unsub(fmt.Errorf("relay connection closed: %w / %w", context.Cause(r.connectionContext), r.ConnectionError))
+				sub.unsub(fmt.Errorf("relay connection closed: %w / %w", context.Cause(r.connectionContext), connectionError))
 			}
 		}()
 
@@ -228,7 +230,12 @@ func (r *Relay) ConnectWithTLS(ctx context.Context, tlsConfig *tls.Config) error
 			buf.Reset()
 
 			if err := conn.ReadMessage(r.connectionContext, buf); err != nil {
+				// same mutex as close() and the write loop's teardown, both of which
+				// read this while shutting the connection down
+				r.closeMutex.Lock()
 				r.ConnectionError = err
+				r.closeMutex.Unlock()
+
 				r.close(err)
 				break
 			}
