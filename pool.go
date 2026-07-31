@@ -208,6 +208,15 @@ func (pool *SimplePool) EnsureRelay(url string) (*Relay, error) {
 	if err := relay.Connect(ctx); err != nil {
 		err = fmt.Errorf("failed to connect: %w", err)
 		pool.recordDialFailure(nm, err)
+
+		// NewRelay derived this relay's context from the pool's, which keeps it in the
+		// pool context's children until it is canceled. Connect() fails before opening a
+		// socket or starting goroutines, so canceling is all the discarded relay needs --
+		// without it every failed dial would leave a child on the pool context for as
+		// long as the pool lives. close() returns "relay not connected" here, which is
+		// exactly the expected state.
+		relay.close(err)
+
 		return nil, err
 	}
 
