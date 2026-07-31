@@ -169,7 +169,12 @@ func (r *Relay) ConnectWithTLS(ctx context.Context, tlsConfig *tls.Config) error
 	go func() {
 		defer func() {
 			ticker.Stop()
+
+			// guarded by the same mutex as close(), which reads Connection to shut the
+			// websocket down: both run when the connection context is canceled
+			r.closeMutex.Lock()
 			r.Connection = nil
+			r.closeMutex.Unlock()
 
 			for _, sub := range r.Subscriptions.Range {
 				sub.unsub(fmt.Errorf("relay connection closed: %w / %w", context.Cause(r.connectionContext), r.ConnectionError))
@@ -411,7 +416,11 @@ func (r *Relay) publish(ctx context.Context, id string, env Envelope) error {
 func (r *Relay) Subscribe(ctx context.Context, filters Filters, opts ...SubscriptionOption) (*Subscription, error) {
 	sub := r.PrepareSubscription(ctx, filters, opts...)
 
-	if r.Connection == nil {
+	r.closeMutex.Lock()
+	connected := r.Connection != nil
+	r.closeMutex.Unlock()
+
+	if !connected {
 		return nil, fmt.Errorf("not connected to %s", r.URL)
 	}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"net/http"
 	"slices"
 	"strings"
@@ -18,12 +17,47 @@ import (
 
 const (
 	seenAlreadyDropTick = time.Minute
+
+	// how long to wait before dialing a relay that just failed to connect, and how much
+	// that wait grows on each successive failure. the wait is kept per relay, not per
+	// subscription, so N subscriptions to a dead relay cost one dial per interval.
+	dialRetryInitial = 3 * time.Second
+	dialRetryMax     = 5 * time.Minute
+
+	// how long a subscription must survive before it counts as healthy. reconnect backoff
+	// is only reset for healthy subscriptions, otherwise a relay that accepts a REQ and
+	// immediately CLOSEs it would keep us retrying at the initial interval forever.
+	subscriptionHealthyAfter = 30 * time.Second
 )
+
+// dialFailure records the most recent failed connection attempt to a single relay, and
+// how long that relay is being held off for as a result.
+type dialFailure struct {
+	// err is the error the failed dial returned. It is handed back to callers that ask
+	// for this relay again before retryAt, so they see why it is unavailable.
+	err error
+
+	// retryAt is the earliest time the relay may be dialed again.
+	retryAt time.Time
+
+	// interval is the hold-off that produced retryAt. It starts at dialRetryInitial and
+	// grows by 1.7x with each consecutive failure, up to dialRetryMax.
+	interval time.Duration
+}
 
 // SimplePool manages connections to multiple relays, ensures they are reopened when necessary and not duplicated.
 type SimplePool struct {
 	Relays  *xsync.MapOf[string, *Relay]
 	Context context.Context
+
+	// dialFailures maps a normalized relay URL (the same key Relays uses) to that relay's
+	// last failed connection attempt. It is what makes connecting cost one dial per relay
+	// rather than one per caller: while an entry is present and unexpired, EnsureRelay
+	// returns its recorded error instead of opening another socket, so any number of
+	// subscriptions to an unreachable relay share a single dial per hold-off period.
+	// Entries are added on a failed dial, replaced (with a longer hold-off) on each
+	// subsequent failure, and deleted once the relay connects.
+	dialFailures *xsync.MapOf[string, dialFailure]
 
 	authHandler func(context.Context, RelayEvent) error
 	cancel      context.CancelCauseFunc
@@ -33,8 +67,6 @@ type SimplePool struct {
 	queryMiddleware     func(relay string, pubkey string, kind int)
 
 	// custom things not often used
-	penaltyBoxMu sync.Mutex
-	penaltyBox   map[string][2]float64
 	relayOptions []RelayOption
 }
 
@@ -62,7 +94,8 @@ func NewSimplePool(ctx context.Context, opts ...PoolOption) *SimplePool {
 	ctx, cancel := context.WithCancelCause(ctx)
 
 	pool := &SimplePool{
-		Relays: xsync.NewMapOf[string, *Relay](),
+		Relays:       xsync.NewMapOf[string, *Relay](),
+		dialFailures: xsync.NewMapOf[string, dialFailure](),
 
 		Context: ctx,
 		cancel:  cancel,
@@ -95,41 +128,22 @@ func (h WithAuthHandler) ApplyPoolOption(pool *SimplePool) {
 	pool.authHandler = h
 }
 
-// WithPenaltyBox just sets the penalty box mechanism so relays that fail to connect
-// or that disconnect will be ignored for a while and we won't attempt to connect again.
+// WithPenaltyBox does nothing.
+//
+// Deprecated: this used to be the opt-in way to stop the pool from redialing a relay
+// that had just failed to connect. That backoff is now always applied -- a relay that
+// fails to connect is held out of rotation for 3s, growing 1.7x with each consecutive
+// failure up to 5 minutes -- so there is nothing left for this option to switch on.
+//
+// It is kept only so existing callers still compile, and can be deleted from any call
+// site without changing behaviour. The old opt-in curve was not kept because it had no
+// upper bound: at 30+2^n seconds it would shelve a relay for hours, then days, long
+// after the relay itself had recovered.
 func WithPenaltyBox() withPenaltyBoxOpt { return withPenaltyBoxOpt{} }
 
 type withPenaltyBoxOpt struct{}
 
-func (h withPenaltyBoxOpt) ApplyPoolOption(pool *SimplePool) {
-	pool.penaltyBox = make(map[string][2]float64)
-	go func() {
-		sleep := 30.0
-		for {
-			time.Sleep(time.Duration(sleep) * time.Second)
-
-			pool.penaltyBoxMu.Lock()
-			nextSleep := 300.0
-			for url, v := range pool.penaltyBox {
-				remainingSeconds := v[1]
-				remainingSeconds -= sleep
-				if remainingSeconds <= 0 {
-					pool.penaltyBox[url] = [2]float64{v[0], 0}
-					continue
-				} else {
-					pool.penaltyBox[url] = [2]float64{v[0], remainingSeconds}
-				}
-
-				if remainingSeconds < nextSleep {
-					nextSleep = remainingSeconds
-				}
-			}
-
-			sleep = nextSleep
-			pool.penaltyBoxMu.Unlock()
-		}
-	}()
-}
+func (h withPenaltyBoxOpt) ApplyPoolOption(pool *SimplePool) {}
 
 // WithEventMiddleware is a function that will be called with all events received.
 type WithEventMiddleware func(RelayEvent)
@@ -162,23 +176,22 @@ var (
 
 // EnsureRelay ensures that a relay connection exists and is active.
 // If the relay is not connected, it attempts to connect.
+//
+// Connection failures are remembered per relay: while a relay is backing off from a
+// failed dial this returns the previous error without opening a new socket, so callers
+// can call it as often as they like without multiplying dials.
 func (pool *SimplePool) EnsureRelay(url string) (*Relay, error) {
 	nm := NormalizeURL(url)
 	defer namedLock(nm)()
 
 	relay, ok := pool.Relays.Load(nm)
-	if ok && relay == nil {
-		if pool.penaltyBox != nil {
-			pool.penaltyBoxMu.Lock()
-			defer pool.penaltyBoxMu.Unlock()
-			v, _ := pool.penaltyBox[nm]
-			if v[1] > 0 {
-				return nil, fmt.Errorf("in penalty box, %fs remaining", v[1])
-			}
-		}
-	} else if ok && relay.IsConnected() {
+	if ok && relay.IsConnected() {
 		// already connected, unlock and return
 		return relay, nil
+	}
+
+	if err := pool.dialSuppressed(nm); err != nil {
+		return nil, err
 	}
 
 	// try to connect
@@ -190,20 +203,72 @@ func (pool *SimplePool) EnsureRelay(url string) (*Relay, error) {
 	)
 	defer cancel()
 
-	relay = NewRelay(context.Background(), url, pool.relayOptions...)
+	// the relay is bound to the pool context so closing the pool closes its websockets
+	relay = NewRelay(pool.Context, url, pool.relayOptions...)
 	if err := relay.Connect(ctx); err != nil {
-		if pool.penaltyBox != nil {
-			// putting relay in penalty box
-			pool.penaltyBoxMu.Lock()
-			defer pool.penaltyBoxMu.Unlock()
-			v, _ := pool.penaltyBox[nm]
-			pool.penaltyBox[nm] = [2]float64{v[0] + 1, 30.0 + math.Pow(2, v[0]+1)}
-		}
-		return nil, fmt.Errorf("failed to connect: %w", err)
+		err = fmt.Errorf("failed to connect: %w", err)
+		pool.recordDialFailure(nm, err)
+		return nil, err
 	}
 
+	pool.clearDialFailure(nm)
 	pool.Relays.Store(nm, relay)
 	return relay, nil
+}
+
+// dialSuppressed reports why the relay at normalized URL nm should not be dialed right
+// now -- it is still inside the hold-off from its last failed dial -- or nil if it may
+// be dialed.
+func (pool *SimplePool) dialSuppressed(nm string) error {
+	f, failedBefore := pool.dialFailures.Load(nm)
+	if !failedBefore {
+		// no failure on record: either this relay has never been dialed, or its last dial
+		// succeeded and clearDialFailure removed the entry
+		return nil
+	}
+
+	if remaining := time.Until(f.retryAt); remaining > 0 {
+		return fmt.Errorf("waiting %s before dialing '%s' again: %w",
+			remaining.Truncate(time.Millisecond), nm, f.err)
+	}
+
+	// the hold-off elapsed, so this caller gets to retry. if nothing even tried for a
+	// full extra interval past that, treat the failure as stale and forget it: the next
+	// failure then starts over at dialRetryInitial rather than inheriting a hold-off
+	// grown during an outage nobody is waiting on any more
+	if time.Now().After(f.retryAt.Add(f.interval)) {
+		pool.dialFailures.Delete(nm)
+		return nil
+	}
+
+	// otherwise the entry stays, so a fresh failure grows the hold-off instead of
+	// restarting it
+	return nil
+}
+
+// recordDialFailure remembers err as the last failed dial to the relay at normalized URL
+// nm and extends that relay's hold-off, so the next callers get err back instead of
+// dialing again.
+func (pool *SimplePool) recordDialFailure(nm string, err error) {
+	// a first failure waits dialRetryInitial; each consecutive one waits 1.7x longer than
+	// the last, up to dialRetryMax. "consecutive" means since the last successful dial or
+	// since the last entry went stale, both of which drop the entry
+	interval := dialRetryInitial
+	if prev, failedBefore := pool.dialFailures.Load(nm); failedBefore {
+		interval = min(dialRetryMax, prev.interval*17/10)
+	}
+
+	pool.dialFailures.Store(nm, dialFailure{
+		err:      err,
+		interval: interval,
+		retryAt:  time.Now().Add(interval),
+	})
+}
+
+// clearDialFailure forgets the failure history of the relay at normalized URL nm, so a
+// relay that comes back does not carry an inflated hold-off into its next outage.
+func (pool *SimplePool) clearDialFailure(nm string) {
+	pool.dialFailures.Delete(nm)
 }
 
 // PublishResult represents the result of publishing an event to a relay.
@@ -465,7 +530,7 @@ func (pool *SimplePool) subMany(
 			}()
 
 			hasAuthed := false
-			interval := 3 * time.Second
+			interval := dialRetryInitial
 			for {
 				select {
 				case <-ctx.Done():
@@ -474,6 +539,11 @@ func (pool *SimplePool) subMany(
 				}
 
 				var sub *Subscription
+
+				// tracked per attempt so the reconnect below can tell whether this
+				// subscription ever worked; nil until we actually subscribe
+				var subscribedAt time.Time
+				var gotEose *atomic.Bool
 
 				if mh := pool.queryMiddleware; mh != nil {
 					for _, filter := range filters {
@@ -496,6 +566,9 @@ func (pool *SimplePool) subMany(
 				hasAuthed = false
 
 			subscribe:
+				subscribedAt = time.Now()
+				gotEose = &atomic.Bool{}
+
 				sub, err = relay.Subscribe(ctx, filters, append(opts, WithCheckDuplicate(func(id, relay string) bool {
 					_, exists := seenAlready.LoadAndStore(id, Timestamp(time.Now().Unix()))
 					if exists && pool.duplicateMiddleware != nil {
@@ -508,17 +581,15 @@ func (pool *SimplePool) subMany(
 					goto reconnect
 				}
 
-				go func() {
+				go func(gotEose *atomic.Bool) {
 					<-sub.EndOfStoredEvents
+					gotEose.Store(true)
 
 					// guard here otherwise a resubscription will trigger a duplicate call to eoseWg.Done()
 					if eosed.CompareAndSwap(false, true) {
 						eoseWg.Done()
 					}
-				}()
-
-				// reset interval when we get a good subscription
-				interval = 3 * time.Second
+				}(gotEose)
 
 				for {
 					select {
@@ -583,10 +654,19 @@ func (pool *SimplePool) subMany(
 				}
 
 			reconnect:
+				// only a subscription that actually worked resets the backoff. reaching
+				// EOSE proves the relay served the REQ; so does staying alive for a while
+				// on a subscription that simply had nothing to send. without this check a
+				// relay that CLOSEs every REQ looks like a fresh success on each attempt
+				// and we would re-REQ at the initial interval indefinitely.
+				if gotEose != nil && (gotEose.Load() || time.Since(subscribedAt) >= subscriptionHealthyAfter) {
+					interval = dialRetryInitial
+				}
+
 				// we will go back to the beginning of the loop and try to connect again and again
 				// until the context is canceled
 				time.Sleep(interval)
-				interval = min(time.Minute*5, interval*17/10) // the next time we try we will wait longer
+				interval = min(dialRetryMax, interval*17/10) // the next time we try we will wait longer
 			}
 		}(url)
 	}
