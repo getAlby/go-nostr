@@ -8,6 +8,11 @@ import (
 )
 
 func TestCount(t *testing.T) {
+	// the relay below is gone: the name still resolves but nothing accepts connections on
+	// port 444, so this test can only burn its connect timeout and fail. Point RELAY at a
+	// live relay that implements NIP-45 COUNT and drop this skip to re-enable it.
+	t.Skip("wss://chorus.mikedilger.com:444 is unreachable; needs a live NIP-45 relay")
+
 	const RELAY = "wss://chorus.mikedilger.com:444"
 
 	rl := mustRelayConnect(t, RELAY)

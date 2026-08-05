@@ -169,10 +169,17 @@ func (r *Relay) ConnectWithTLS(ctx context.Context, tlsConfig *tls.Config) error
 	go func() {
 		defer func() {
 			ticker.Stop()
+
+			// guarded by the same mutex as close(), which reads Connection to shut the
+			// websocket down, and as the reader loop, which sets ConnectionError on its
+			// way out: all of them run when the connection context is canceled
+			r.closeMutex.Lock()
 			r.Connection = nil
+			connectionError := r.ConnectionError
+			r.closeMutex.Unlock()
 
 			for _, sub := range r.Subscriptions.Range {
-				sub.unsub(fmt.Errorf("relay connection closed: %w / %w", context.Cause(r.connectionContext), r.ConnectionError))
+				sub.unsub(fmt.Errorf("relay connection closed: %w / %w", context.Cause(r.connectionContext), connectionError))
 			}
 		}()
 
@@ -223,7 +230,12 @@ func (r *Relay) ConnectWithTLS(ctx context.Context, tlsConfig *tls.Config) error
 			buf.Reset()
 
 			if err := conn.ReadMessage(r.connectionContext, buf); err != nil {
+				// same mutex as close() and the write loop's teardown, both of which
+				// read this while shutting the connection down
+				r.closeMutex.Lock()
 				r.ConnectionError = err
+				r.closeMutex.Unlock()
+
 				r.close(err)
 				break
 			}
@@ -411,7 +423,11 @@ func (r *Relay) publish(ctx context.Context, id string, env Envelope) error {
 func (r *Relay) Subscribe(ctx context.Context, filters Filters, opts ...SubscriptionOption) (*Subscription, error) {
 	sub := r.PrepareSubscription(ctx, filters, opts...)
 
-	if r.Connection == nil {
+	r.closeMutex.Lock()
+	connected := r.Connection != nil
+	r.closeMutex.Unlock()
+
+	if !connected {
 		return nil, fmt.Errorf("not connected to %s", r.URL)
 	}
 
@@ -569,24 +585,27 @@ func (r *Relay) Close() error {
 
 func (r *Relay) close(reason error) error {
 	r.closeMutex.Lock()
-	defer r.closeMutex.Unlock()
 
 	if r.connectionContextCancel == nil {
+		r.closeMutex.Unlock()
 		return fmt.Errorf("relay already closed")
 	}
 	r.connectionContextCancel(reason)
 	r.connectionContextCancel = nil
 
-	if r.Connection == nil {
+	// snapshot the connection under the mutex: the write loop's teardown,
+	// woken by the cancel above, sets r.Connection to nil
+	conn := r.Connection
+	r.closeMutex.Unlock()
+
+	if conn == nil {
 		return fmt.Errorf("relay not connected")
 	}
 
-	err := r.Connection.Close()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// the websocket close handshake can block for up to ~10s waiting on the
+	// peer, so it must happen outside the mutex or it holds up the teardown
+	// that unsubs subscriptions, plus Subscribe and the reader loop
+	return conn.Close()
 }
 
 var subIdPool = sync.Pool{
