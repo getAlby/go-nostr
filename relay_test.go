@@ -105,6 +105,27 @@ func TestPublishWriteFailed(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestPublishConnectionClosedBeforeOK(t *testing.T) {
+	// test note to be sent over websocket
+	textNote := Event{Kind: KindTextNote, Content: "hello"}
+	textNote.ID = textNote.GetID()
+
+	// fake relay server
+	ws := newWebsocketServer(func(conn *websocket.Conn) {
+		// receive the event, then close the connection without sending an OK
+		var raw []stdjson.RawMessage
+		err := websocket.JSON.Receive(conn, &raw)
+		assert.NoError(t, err)
+		conn.Close()
+	})
+	defer ws.Close()
+
+	// connect a client and send a text note
+	rl := mustRelayConnect(t, ws.URL)
+	err := rl.Publish(context.Background(), textNote)
+	assert.ErrorContains(t, err, "connection closed before receiving an OK")
+}
+
 func TestConnectContext(t *testing.T) {
 	// fake relay server
 	var mu sync.Mutex // guards connected to satisfy go test -race
