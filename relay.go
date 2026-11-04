@@ -408,8 +408,16 @@ func (r *Relay) publish(ctx context.Context, id string, env Envelope) error {
 			}
 			return ctx.Err()
 		case <-r.connectionContext.Done():
-			// this is caused when we lose connectivity
-			return err
+			// this is caused when we lose connectivity.
+			// an OK may still have arrived just before the connection closed
+			select {
+			case <-ctx.Done():
+				if gotOk {
+					return err
+				}
+			default:
+			}
+			return fmt.Errorf("connection closed before receiving an OK: %w", context.Cause(r.connectionContext))
 		}
 	}
 }
