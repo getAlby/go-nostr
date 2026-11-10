@@ -95,6 +95,12 @@ func Decrypt(content string, key []byte) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error creating block cipher: %w", err)
 	}
+	if len(iv) != block.BlockSize() {
+		return "", fmt.Errorf("invalid iv length: %d", len(iv))
+	}
+	if len(ciphertext)%block.BlockSize() != 0 {
+		return "", fmt.Errorf("invalid ciphertext length: %d", len(ciphertext))
+	}
 	mode := cipher.NewCBCDecrypter(block, iv)
 	plaintext := make([]byte, len(ciphertext))
 	mode.CryptBlocks(plaintext, ciphertext)
