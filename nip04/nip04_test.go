@@ -68,20 +68,32 @@ func TestNostrToolsCompatibility(t *testing.T) {
 }
 
 func TestDecryptInvalidIVOrCiphertextLength(t *testing.T) {
-	sharedSecret := make([]byte, 32)
+	sk1 := nostr.GeneratePrivateKey()
+	sk2 := nostr.GeneratePrivateKey()
+	pk2, err := nostr.GetPublicKey(sk2)
+	require.NoError(t, err)
+	sharedSecret, err := ComputeSharedSecret(pk2, sk1)
+	require.NoError(t, err)
+
 	b64 := func(n int) string { return base64.StdEncoding.EncodeToString(make([]byte, n)) }
 
-	for name, content := range map[string]string{
-		"short iv":             b64(16) + "?iv=" + b64(8),
-		"long iv":              b64(16) + "?iv=" + b64(32),
-		"empty iv":             b64(16) + "?iv=",
-		"ciphertext not 16x":   b64(17) + "?iv=" + b64(16),
-		"ciphertext too short": b64(5) + "?iv=" + b64(16),
-	} {
-		t.Run(name, func(t *testing.T) {
+	testCases := []struct {
+		name          string
+		content       string
+		expectedError string
+	}{
+		{"short iv", b64(16) + "?iv=" + b64(8), "invalid iv length: 8"},
+		{"long iv", b64(16) + "?iv=" + b64(32), "invalid iv length: 32"},
+		{"empty iv", b64(16) + "?iv=", "invalid iv length: 0"},
+		{"ciphertext not a multiple of 16", b64(17) + "?iv=" + b64(16), "invalid ciphertext length: 17"},
+		{"ciphertext shorter than a block", b64(5) + "?iv=" + b64(16), "invalid ciphertext length: 5"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
 			require.NotPanics(t, func() {
-				_, err := Decrypt(content, sharedSecret)
-				require.Error(t, err)
+				_, err := Decrypt(tc.content, sharedSecret)
+				require.EqualError(t, err, tc.expectedError)
 			})
 		})
 	}
