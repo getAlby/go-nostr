@@ -1,6 +1,7 @@
 package nip04
 
 import (
+	"encoding/base64"
 	"strings"
 	"testing"
 
@@ -64,4 +65,24 @@ func TestNostrToolsCompatibility(t *testing.T) {
 	ciphertext := "A+fRnU4aXS4kbTLfowqAww==?iv=QFYUrl5or/n/qamY79ze0A=="
 	plaintext, _ := Decrypt(ciphertext, shared)
 	require.Equal(t, "hello", plaintext, "invalid decryption of nostr-tools payload")
+}
+
+func TestDecryptInvalidIVOrCiphertextLength(t *testing.T) {
+	sharedSecret := make([]byte, 32)
+	b64 := func(n int) string { return base64.StdEncoding.EncodeToString(make([]byte, n)) }
+
+	for name, content := range map[string]string{
+		"short iv":             b64(16) + "?iv=" + b64(8),
+		"long iv":              b64(16) + "?iv=" + b64(32),
+		"empty iv":             b64(16) + "?iv=",
+		"ciphertext not 16x":   b64(17) + "?iv=" + b64(16),
+		"ciphertext too short": b64(5) + "?iv=" + b64(16),
+	} {
+		t.Run(name, func(t *testing.T) {
+			require.NotPanics(t, func() {
+				_, err := Decrypt(content, sharedSecret)
+				require.Error(t, err)
+			})
+		})
+	}
 }
